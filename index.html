@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Discord Widget</title>
+    <style>
+        :root {
+            --bg-color: #1e1e2e;
+            --card-color: #252538;
+            --accent-color: #ff79c6;
+            --text-color: #f8f8f2;
+            --muted-color: #6272a4;
+            --online-color: #50fa7b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .discord-widget {
+            background-color: var(--card-color);
+            border-radius: 16px;
+            padding: 24px;
+            width: 320px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 256, 0.05);
+            text-align: center;
+        }
+
+        .widget-header {
+            margin-bottom: 20px;
+        }
+
+        .server-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0 0 4px 0;
+        }
+
+        .presence-count {
+            font-size: 0.85rem;
+            color: var(--muted-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--online-color);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--online-color);
+        }
+
+        .member-list {
+            max-height: 180px;
+            overflow-y: auto;
+            text-align: left;
+            margin-bottom: 20px;
+            padding-right: 4px;
+        }
+
+        .member-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .member-list::-webkit-scrollbar-thumb {
+            background: var(--muted-color);
+            border-radius: 4px;
+        }
+
+        .member-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 0;
+        }
+
+        .avatar-container {
+            position: relative;
+            position: relative;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #44475a;
+        }
+
+        .member-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .join-btn {
+            display: inline-block;
+            width: 100%;
+            background-color: var(--accent-color);
+            color: white;
+            text-decoration: none;
+            padding: 12px 0;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        .join-btn:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="discord-widget">
+        <div class="widget-header">
+            <h3 class="server-name" id="server-name">Loading Server...</h3>
+            <div class="presence-count">
+                <span class="status-dot"></span>
+                <span id="online-count">0 Members Online</span>
+            </div>
+        </div>
+
+        <div class="member-list" id="member-list">
+            <!-- Members dynamically injected here -->
+        </div>
+
+        <a href="#" class="join-btn" id="invite-link" target="_blank">Join Community</a>
+    </div>
+
+    <script>
+        // REPLACE THIS URL WITH YOUR ACTUAL DISCORD WIDGET JSON API URL
+        const WIDGET_JSON_URL = "https://discordapp.com/api/guilds/1539717220483989565/widget.json";
+
+        async function fetchDiscordWidget() {
+            try {
+                const response = await fetch(WIDGET_JSON_URL);
+                const data = await response.json();
+
+                // 1. Update Server Identity
+                document.getElementById('server-name').innerText = data.name;
+                document.getElementById('online-count').innerText = `${data.presence_count} Online`;
+                document.getElementById('invite-link').href = data.instant_invite;
+
+                // 2. Render Online Members
+                const memberList = document.getElementById('member-list');
+                memberList.innerHTML = ''; // Clear fallback
+
+                // Only show first 5 to keep UI clean, or adjust as needed
+                const onlineMembers = data.members.slice(0, 5); 
+
+                if (onlineMembers.length === 0) {
+                    memberList.innerHTML = '<div style="color: var(--muted-color); text-align:center; font-size:0.85rem;">No members visible</div>';
+                    return;
+                }
+
+                onlineMembers.forEach(member => {
+                    const item = document.createElement('div');
+                    item.className = 'member-item';
+
+                    item.innerHTML = `
+                        <div class="avatar-container">
+                            <img class="avatar" src="${member.avatar_url}" alt="${member.username}">
+                        </div>
+                        <span class="member-name">${member.username}</span>
+                    `;
+                    memberList.appendChild(item);
+                });
+
+            } catch (error) {
+                console.error("Error fetching Discord widget data:", error);
+                document.getElementById('server-name').innerText = "Failed to load";
+            }
+        }
+
+        // Fetch immediately and refresh every 30 seconds
+        if (WIDGET_JSON_URL !== "YOUR_DISCORD_WIDGET_JSON_URL_HERE") {
+            fetchDiscordWidget();
+            setInterval(fetchDiscordWidget, 30000);
+        } else {
+            // Mock data template presentation if URL isn't set yet
+            document.getElementById('server-name').innerText = "Your Server Name";
+            document.getElementById('online-count').innerText = "42 Online";
+            document.getElementById('member-list').innerHTML = `
+                <div class="member-item"><div class="avatar"></div><span class="member-name">SampleUser1</span></div>
+                <div class="member-item"><div class="avatar"></div><span class="member-name">SampleUser2</span></div>
+            `;
+        }
+    </script>
+</body>
+</html>
